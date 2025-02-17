@@ -36,7 +36,7 @@ return [
     ],
 
     'weather' => [
-        'open_weather_api_key'  => env('OPEN_WEATHER_API'),
+        'open_weather_map_api_key'  => env('OPEN_WEATHER_MAP_API_KEY'),
         'weather_api_key' => env('WEATHER_API_KEY'),
     ]
 
