@@ -5,18 +5,24 @@
         </h2>
     </div>
 
-    <p class="mt-4 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+    <p class="mt-3 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
         You can select your city and subscribe to get notified about the harmful weather in your city.
     </p>
+
+    @if (session()->has('message'))
+        <div id="success-message" class="lg:max-w-[50%] w-100 mt-4 p-4 bg-green-500 text-white rounded-md">
+            {{ session('message') }}
+        </div>
+    @endif
 
 
     <div class="mt-4">
         <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select your
             city:</label>
-        <div class="flex flex-col md:flex-row gap-4 items-center mt-2">
+        <div class="flex flex-col md:flex-row lg:w-[50%] w-full justify-center align-middle gap-4 items-center mt-2">
             <button id="detect-city"
-                class="md:w-auto w-full px-4 py-2 bg-gray-500 text-white rounded-md flex-nowrap">Detect
-                City
+                class="p-2 w-10 flex justify-center align-middle bg-gray-500 text-white rounded-md flex-nowrap"
+                title="Detect City"><i class="lni lni-location-arrow-right"></i>
             </button>
             <select id="country" name="country"
                 class="mt-1 block w-full md:max-w-64 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
@@ -29,8 +35,10 @@
                 class="mt-1 block w-full md:max-w-64 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                 <option value="">Select City</option>
             </select>
-            <button id="add-city" class="md:w-auto w-full px-4 py-2 bg-blue-500 text-white rounded-md flex-nowrap">
-                Add City
+            <button id="add-city"
+                class="p-2 w-10 flex justify-center align-middle bg-blue-500 text-white rounded-md flex-nowrap"
+                title="Add City">
+                <i class="lni lni-plus"></i>
             </button>
         </div>
     </div>
@@ -42,6 +50,11 @@
             <ul id="selected-cities-list" class="mt-2 list-none p-0">
                 <li>None</li>
             </ul>
+            @error('state.selectedCities')
+                <div class="error text-red-500 text-sm mt-2">
+                    <span class="error">{{ $message }}</span>
+                </div>
+            @enderror
             <template id="city-template">
                 <li class="flex items-center justify-between bg-gray-200 rounded-full px-4 py-2 mb-2">
                     <span class="city-name">City Name</span>
@@ -58,11 +71,16 @@
             <div class="mt-4">
                 <label for="threshold" class="block text-sm font-medium text-gray-700 dark:text-gray-300">UV Index
                     Threshold:</label>
-                <input id="threshold" name="threshold" wire:model="threshold" type="text" value="6"
+                <input id="threshold" name="threshold" wire:model="state.threshold" type="text" value="6"
                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" />
+                <div class="error text-red-500 text-sm mt-2">
+                    @error('state.threshold')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
             </div>
 
-            <input type="hidden" name="selected_cities" id="selected-cities" wire:model.defer="selected_cities"
+            <input type="hidden" name="selectedCities" id="selected-cities" wire:model.defer="state.selectedCities"
                 value="" />
 
             <button id="save-btn" type="submit"
@@ -71,39 +89,22 @@
             </button>
         </form>
     </div>
+</div>
 
-
+@script
     <script>
-        const initialSubscribedCities = [{
-                city: 'Lagos',
-                country: 'Nigeria',
-                longitude: '3.3792',
-                latitude: '6.5244'
-            },
-            {
-                city: 'New York',
-                country: 'United States',
-                longitude: '-74.0060',
-                latitude: '40.7128'
-            },
-            {
-                city: 'London',
-                country: 'United Kingdom',
-                longitude: '-0.1276',
-                latitude: '51.5072'
-            }
-        ];
+        const initialSubscribedCities = $wire.state.selectedCities;
 
         const detectButton = document.querySelector('#detect-city');
         const addButton = document.querySelector('#add-city');
         const saveButton = document.querySelector('#save-btn');
         const status = document.querySelector("#selected-city-text");
-        const cities = {!! json_encode($cities->values()->toArray()) !!};
-        const countries = {!! json_encode($countries->values()->toArray()) !!};
+        const cities = $wire.cities;
+        const countries = $wire.countries;
         const citySelect = document.querySelector('#city');
         const countrySelect = document.querySelector('#country');
         const selection = {
-            city: '',
+            name: '',
             country: '',
             longitude: '',
             latitude: ''
@@ -122,7 +123,7 @@
                     const currentCity = cities.find(city => city.name.toLowerCase() === locationData.city
                         .toLowerCase());
 
-                    selection.city = currentCity.name;
+                    selection.name = currentCity.name;
                     selection.country = currentCity.country
                     selection.longitude = currentCity.longitude;
                     selection.latitude = currentCity.latitude;
@@ -142,8 +143,6 @@
                             break;
                         }
                     }
-
-                    displaySelection()
                 })
                 .catch(error => console.error('Error detecting city:', error));
         }
@@ -167,14 +166,10 @@
             const currentCity = cities.find(city => city.name.toLowerCase() === citySelect.value
                 .toLowerCase());
 
-            selection.city = currentCity.name;
+            selection.name = currentCity.name;
             selection.longitude = currentCity.longitude;
             selection.latitude = currentCity.latitude;
         });
-
-        const displaySelection = () => {
-            status.textContent = `${selection.city}, ${selection.country}`;
-        }
 
         const getCurrentWeather = async (latitude, longitude) => {
             const url =
@@ -188,7 +183,7 @@
             setTimeout(() => {
                 selectedCitiesInput.value = JSON.stringify(selectedCities);
                 selectedCitiesInput.dispatchEvent(new Event(
-                'input')); // required for Livewire to detect changes
+                    'input')); // required for Livewire to detect changes
             }, 100); // Delay to allow Livewire to update the value
         }
 
@@ -201,9 +196,9 @@
 
             selectedCities.forEach(city => {
                 const clone = document.importNode(itemTemplate, true);
-                clone.querySelector('.city-name').textContent = `${city.city}, ${city.country}`;
+                clone.querySelector('.city-name').textContent = `${city.name}, ${city.country}`;
                 clone.querySelector('.remove-city').addEventListener('click', removeCity);
-                clone.querySelector('.remove-city').setAttribute('data-city-name', city.city);
+                clone.querySelector('.remove-city').setAttribute('data-city-name', city.name);
 
                 selectionListElement.appendChild(clone);
             });
@@ -214,7 +209,7 @@
             const listItem = button.closest('li');
             const cityName = button.attributes['data-city-name'].value;
 
-            const index = selectedCities.findIndex(city => city.city === cityName);
+            const index = selectedCities.findIndex(city => city.name === cityName);
 
             if (index > -1) {
                 selectedCities.splice(index, 1);
@@ -236,7 +231,7 @@
         });
 
         addButton?.addEventListener('click', function() {
-            if (selectedCities.find(city => city.city === selection.city)) {
+            if (selectedCities.find(city => city.name === selection.name)) {
                 return;
             }
 
@@ -244,7 +239,7 @@
                 ...selection
             });
 
-            selection.city = '';
+            selection.name = '';
             selection.country = '';
             selection.longitude = '';
             selection.latitude = '';
@@ -257,7 +252,7 @@
 
         const handleCitySelectionEvent = function(event) {
             const data = event.detail;
-            if (data.country && data.city && data.latitude && data.longitude) {
+            if (data.country && data.name && data.latitude && data.longitude) {
                 addButton.disabled = false;
             } else {
                 addButton.disabled = true;
@@ -269,6 +264,17 @@
         });
 
         document.addEventListener('CitySelectionChanged', handleCitySelectionEvent);
+
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('subscriptionUpdated', (state) => {
+                setTimeout(() => {
+                    $wire.reloadState()
+                        .then(() => {
+                            renderSelection();
+                        });
+                }, 2000);
+            });
+        });
 
         (() => {
             initialSubscribedCities.forEach(city => {
@@ -283,3 +289,4 @@
             document.dispatchEvent(selectionChangedEvent);
         }, 500);
     </script>
+@endscript

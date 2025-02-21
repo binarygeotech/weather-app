@@ -19,9 +19,14 @@ class CitiesHelper
         return $this->cities;
     }
 
+    public function getCity(string $name): Collection
+    {
+        return $this->cities->where('name', $name)->flatten();
+    }
+
     public function getCitiesByCountry(string $country): Collection
     {
-        return $this->cities->where('country', $country);
+        return $this->cities->where('country', $country)->flatten();
     }
 
     public function getCountries(): Collection

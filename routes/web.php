@@ -1,6 +1,6 @@
 <?php
 
-use App\Livewire\CityComponent;
+use App\Livewire\WeatherCompanionComponent;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,5 +16,5 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 
-    Route::get('/weather-companion', CityComponent::class)->name('companion');
+    Route::get('/weather-companion', WeatherCompanionComponent::class)->name('companion');
 });
