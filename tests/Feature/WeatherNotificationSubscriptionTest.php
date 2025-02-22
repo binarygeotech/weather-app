@@ -84,3 +84,40 @@ test('user can unsubscribe to weather notification', function () {
         'city' => $state['selectedCities'][0]->name,
     ]);
 })->only();
+
+test('user can be notified to weather', function () {
+    $cities = (new CitiesHelper())->getAllCities()->random(5);
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+    $threshold = round(rand(1, 10), 1);
+    $state = [
+        'threshold' => $threshold,
+        'selectedCities' => $cities->random(3),
+    ];
+
+    Livewire::test(WeatherCompanionComponent::class)
+        ->set('state', $state)
+        ->call('subscribe')
+        ->assertStatus(200);
+
+    $this->assertDatabaseHas('weather_notification_subscriptions', [
+        'user_id' => $user->id,
+        'threshold' => $threshold,
+        'city' => $state['selectedCities'][0]->name,
+    ]);
+
+    Livewire::test(WeatherCompanionComponent::class)
+        ->set('state', [
+            'threshold' => 1,
+            'selectedCities' => [],
+        ])
+        ->call('subscribe')
+        ->assertStatus(200);
+
+    $this->assertDatabaseMissing('weather_notification_subscriptions', [
+        'user_id' => $user->id,
+        'threshold' => $threshold,
+        'city' => $state['selectedCities'][0]->name,
+    ]);
+})->only();

@@ -18,7 +18,7 @@ class SubscribeUser
             ]);
         }
 
-        $user->refresh();
+        $user->fresh();
 
         return $user;
     }
